@@ -3,7 +3,7 @@ use crate::{Limb, Uint, Word};
 use super::mul::{mul_montgomery_form, square_montgomery_form};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::{bigint, sys_bigint};
+use risc0_zkvm_platform::syscall::bigint;
 
 /// Performs modular exponentiation using Montgomery's ladder.
 /// `exponent_bits` represents the number of bits to take into account for the exponent.

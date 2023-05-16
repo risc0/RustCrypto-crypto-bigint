@@ -3,10 +3,7 @@ use crate::{Limb, Uint};
 use super::reduction::montgomery_reduction;
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::{bigint, sys_bigint};
-
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use subtle::ConstantTimeLess;
+use risc0_zkvm_platform::syscall::bigint;
 
 pub(crate) fn into_montgomery_form<const LIMBS: usize>(
     a: &Uint<LIMBS>,
