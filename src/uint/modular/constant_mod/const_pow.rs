@@ -82,6 +82,17 @@ mod tests {
     }
 
     #[test]
+    fn test_powmod_zero_exponent() {
+        let base =
+            U256::from_be_hex("3435D18AA8313EBBE4D20002922225B53F75DC4453BB3EEC0378646F79B524A4");
+        let base_mod = const_residue!(base, Modulus);
+
+        let res = base_mod.pow(&U256::ZERO);
+
+        assert_eq!(res.retrieve(), U256::ONE);
+    }
+
+    #[test]
     fn test_powmod() {
         let base =
             U256::from_be_hex("3435D18AA8313EBBE4D20002922225B53F75DC4453BB3EEC0378646F79B524A4");
