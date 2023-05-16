@@ -16,6 +16,9 @@ use {
     serdect::serde::{Deserialize, Deserializer, Serialize, Serializer},
 };
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_zkvm_platform::syscall::bigint;
+
 /// Additions between residues with a constant modulus
 mod const_add;
 /// Multiplicative inverses of residues with a constant modulus
@@ -83,6 +86,23 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
     };
 
     /// The representation of 1 mod `MOD`.
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub const ONE: Self = {
+        if LIMBS == bigint::WIDTH_WORDS {
+            Self {
+                montgomery_form: Uint::<LIMBS>::ONE,
+                phantom: PhantomData,
+            }
+        } else {
+            Self {
+                montgomery_form: MOD::R,
+                phantom: PhantomData,
+            }
+        }
+    };
+
+    /// The representation of 1 mod `MOD`.
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub const ONE: Self = Self {
         montgomery_form: MOD::R,
         phantom: PhantomData,

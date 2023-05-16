@@ -2,6 +2,9 @@ use crate::{Limb, Uint, Word};
 
 use super::{div_by_2::div_by_2, reduction::montgomery_reduction, Retrieve};
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_zkvm_platform::syscall::bigint;
+
 /// Additions between residues with a modulus set at runtime
 mod runtime_add;
 /// Multiplicative inverses of residues with a modulus set at runtime
@@ -108,6 +111,14 @@ impl<const LIMBS: usize> DynResidue<LIMBS> {
 
     /// Instantiates a new `Residue` that represents 1.
     pub const fn one(residue_params: DynResidueParams<LIMBS>) -> Self {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == bigint::WIDTH_WORDS {
+            return Self {
+                montgomery_form: Uint::<LIMBS>::ONE,
+                residue_params,
+            };
+        }
+
         Self {
             montgomery_form: residue_params.r,
             residue_params,

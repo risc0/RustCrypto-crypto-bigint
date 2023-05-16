@@ -28,15 +28,6 @@ pub(crate) fn mul_montgomery_form<const LIMBS: usize>(
                 b.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
                 modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
             );
-            // a and b are in montgomery form (a' * R) and (b' * R).
-            // Getting the final result ((a' * b') * R) requires removing a multiple of R.
-            sys_bigint(
-                out.as_mut_ptr() as *mut [u32; bigint::WIDTH_WORDS],
-                bigint::OP_MULTIPLY,
-                out.as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                _r_inv.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-            );
             out.assume_init()
         });
         // Assert that the Prover returned the canonical representation of the result, i.e. that it
@@ -64,15 +55,6 @@ pub(crate) fn square_montgomery_form<const LIMBS: usize>(
                 bigint::OP_MULTIPLY,
                 a.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
                 a.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-            );
-            // a and b are in montgomery form (a' * R) and (b' * R).
-            // Getting the final result ((a' * b') * R) requires removing a multiple of R.
-            sys_bigint(
-                out.as_mut_ptr() as *mut [u32; bigint::WIDTH_WORDS],
-                bigint::OP_MULTIPLY,
-                out.as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                _r_inv.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
                 modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
             );
             out.assume_init()

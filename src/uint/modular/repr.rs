@@ -17,21 +17,9 @@ pub(crate) fn into_montgomery_form<const LIMBS: usize>(
 ) -> Uint<LIMBS> {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     if LIMBS == bigint::WIDTH_WORDS {
-        let result = Uint::<LIMBS>::from_words(unsafe {
-            let mut out = core::mem::MaybeUninit::<[u32; LIMBS]>::uninit();
-            sys_bigint(
-                out.as_mut_ptr() as *mut [u32; bigint::WIDTH_WORDS],
-                bigint::OP_MULTIPLY,
-                a.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                _r.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-            );
-            out.assume_init()
-        });
-        // Assert that the Prover returned the canonical representation of the result, i.e. that it
-        // is fully reduced and has no multiples of the modulus included.
-        assert!(bool::from(result.ct_lt(&modulus)));
-        return result;
+        // In the RISC Zero zkVM 256-bit residues are represented in standard form instead of
+        // Montgomery because, with the accelerator, multiplication is more efficient.
+        return a.clone();
     }
 
     let product = a.mul_wide(r2);
@@ -46,21 +34,9 @@ pub(crate) fn from_montgomery_form<const LIMBS: usize>(
 ) -> Uint<LIMBS> {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     if LIMBS == bigint::WIDTH_WORDS {
-        let result = Uint::<LIMBS>::from_words(unsafe {
-            let mut out = core::mem::MaybeUninit::<[u32; LIMBS]>::uninit();
-            sys_bigint(
-                out.as_mut_ptr() as *mut [u32; bigint::WIDTH_WORDS],
-                bigint::OP_MULTIPLY,
-                a.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                _r_inv.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-                modulus.as_words().as_ptr() as *const [u32; bigint::WIDTH_WORDS],
-            );
-            out.assume_init()
-        });
-        // Assert that the Prover returned the canonical representation of the result, i.e. that it
-        // is fully reduced and has no multiples of the modulus included.
-        assert!(bool::from(result.ct_lt(&modulus)));
-        return result;
+        // In the RISC Zero zkVM 256-bit residues are represented in standard form instead of
+        // Montgomery because, with the accelerator, multiplication is more efficient.
+        return a.clone();
     }
 
     montgomery_reduction::<LIMBS>(&(*a, Uint::<LIMBS>::ZERO), modulus, mod_neg_inv)
