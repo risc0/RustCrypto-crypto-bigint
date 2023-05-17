@@ -3,17 +3,16 @@ use crate::{Limb, Uint};
 use super::reduction::montgomery_reduction;
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::bigint;
+use crate::risc0;
 
 pub(crate) fn into_montgomery_form<const LIMBS: usize>(
     a: &Uint<LIMBS>,
     r2: &Uint<LIMBS>,
     modulus: &Uint<LIMBS>,
     mod_neg_inv: Limb,
-    _r: &Uint<LIMBS>,
 ) -> Uint<LIMBS> {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-    if LIMBS == bigint::WIDTH_WORDS {
+    if LIMBS == risc0::BIGINT_WIDTH_WORDS {
         // In the RISC Zero zkVM 256-bit residues are represented in standard form instead of
         // Montgomery because, with the accelerator, multiplication is more efficient.
         return a.clone();
@@ -27,10 +26,9 @@ pub(crate) fn from_montgomery_form<const LIMBS: usize>(
     a: &Uint<LIMBS>,
     modulus: &Uint<LIMBS>,
     mod_neg_inv: Limb,
-    _r_inv: &Uint<LIMBS>,
 ) -> Uint<LIMBS> {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-    if LIMBS == bigint::WIDTH_WORDS {
+    if LIMBS == risc0::BIGINT_WIDTH_WORDS {
         // In the RISC Zero zkVM 256-bit residues are represented in standard form instead of
         // Montgomery because, with the accelerator, multiplication is more efficient.
         return a.clone();

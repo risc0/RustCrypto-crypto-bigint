@@ -17,7 +17,7 @@ use {
 };
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::bigint;
+use crate::risc0;
 
 /// Additions between residues with a constant modulus
 mod const_add;
@@ -55,8 +55,6 @@ pub trait ResidueParams<const LIMBS: usize>:
     const R2: Uint<LIMBS>;
     /// R^3, used to perform a multiplicative inverse
     const R3: Uint<LIMBS>;
-    /// R^-1, used in the RISC Zero implementation to remove one factor of R after multiplication.
-    const R_INV: Uint<LIMBS>;
     /// The lowest limbs of -(MODULUS^-1) mod R
     // We only need the LSB because during reduction this value is multiplied modulo 2**Limb::BITS.
     const MOD_NEG_INV: Limb;
@@ -88,7 +86,7 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
     /// The representation of 1 mod `MOD`.
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub const ONE: Self = {
-        if LIMBS == bigint::WIDTH_WORDS {
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
             Self {
                 montgomery_form: Uint::<LIMBS>::ONE,
                 phantom: PhantomData,
@@ -116,7 +114,6 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
                 &MOD::R2,
                 &MOD::MODULUS,
                 MOD::MOD_NEG_INV,
-                &MOD::R,
             ),
             phantom: PhantomData,
         }
@@ -128,7 +125,6 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
             &self.montgomery_form,
             &MOD::MODULUS,
             MOD::MOD_NEG_INV,
-            &MOD::R_INV,
         )
     }
 

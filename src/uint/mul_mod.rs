@@ -8,7 +8,6 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     /// For the modulus reduction, this function implements Algorithm 14.47 from
     /// the "Handbook of Applied Cryptography", by A. Menezes, P. van Oorschot,
     /// and S. Vanstone, CRC Press, 1996.
-    // TODO(victor): Use sys_bigint to implement this method?
     pub const fn mul_mod_special(&self, rhs: &Self, c: Limb) -> Self {
         // We implicitly assume `LIMBS > 0`, because `Uint<0>` doesn't compile.
         // Still the case `LIMBS == 1` needs special handling.

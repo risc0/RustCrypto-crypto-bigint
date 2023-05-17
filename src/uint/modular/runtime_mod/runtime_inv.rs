@@ -15,7 +15,6 @@ impl<const LIMBS: usize> DynResidue<LIMBS> {
             &self.residue_params.modulus,
             &self.residue_params.r3,
             self.residue_params.mod_neg_inv,
-            &self.residue_params.r_inv,
         );
 
         let value = Self {

@@ -3,7 +3,7 @@ use crate::{Limb, Uint, Word};
 use super::mul::{mul_montgomery_form, square_montgomery_form};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::bigint;
+use crate::risc0;
 
 /// Performs modular exponentiation using Montgomery's ladder.
 /// `exponent_bits` represents the number of bits to take into account for the exponent.
@@ -16,10 +16,9 @@ pub fn pow_montgomery_form<const LIMBS: usize>(
     modulus: &Uint<LIMBS>,
     r: &Uint<LIMBS>,
     mod_neg_inv: Limb,
-    r_inv: &Uint<LIMBS>,
 ) -> Uint<LIMBS> {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-    let one = if LIMBS == bigint::WIDTH_WORDS {
+    let one = if LIMBS == risc0::BIGINT_WIDTH_WORDS {
         Uint::<LIMBS>::ONE
     } else {
         *r // 1 in Montgomery form
@@ -40,7 +39,7 @@ pub fn pow_montgomery_form<const LIMBS: usize>(
     powers[1] = *x;
     let mut i = 2;
     while i < powers.len() {
-        powers[i] = mul_montgomery_form(&powers[i - 1], x, modulus, mod_neg_inv, r_inv);
+        powers[i] = mul_montgomery_form(&powers[i - 1], x, modulus, mod_neg_inv);
         i += 1;
     }
 
@@ -72,7 +71,7 @@ pub fn pow_montgomery_form<const LIMBS: usize>(
                 let mut i = 0;
                 while i < WINDOW {
                     i += 1;
-                    z = square_montgomery_form(&z, modulus, mod_neg_inv, r_inv);
+                    z = square_montgomery_form(&z, modulus, mod_neg_inv);
                 }
             }
 
@@ -85,7 +84,7 @@ pub fn pow_montgomery_form<const LIMBS: usize>(
                 i += 1;
             }
 
-            z = mul_montgomery_form(&z, &power, modulus, mod_neg_inv, r_inv);
+            z = mul_montgomery_form(&z, &power, modulus, mod_neg_inv);
         }
     }
 

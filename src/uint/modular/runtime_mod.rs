@@ -3,7 +3,7 @@ use crate::{Limb, Uint, Word};
 use super::{div_by_2::div_by_2, reduction::montgomery_reduction, Retrieve};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_zkvm_platform::syscall::bigint;
+use crate::risc0;
 
 /// Additions between residues with a modulus set at runtime
 mod runtime_add;
@@ -29,8 +29,6 @@ pub struct DynResidueParams<const LIMBS: usize> {
     r2: Uint<LIMBS>,
     // R^3, used to compute the multiplicative inverse
     r3: Uint<LIMBS>,
-    // R^-1, used in the RISC Zero implementation to remove one factor of R after multiplication.
-    r_inv: Uint<LIMBS>,
     // The lowest limbs of -(MODULUS^-1) mod R
     // We only need the LSB because during reduction this value is multiplied modulo 2**Limb::BITS.
     mod_neg_inv: Limb,
@@ -48,9 +46,6 @@ impl<const LIMBS: usize> DynResidueParams<LIMBS> {
         let mod_neg_inv =
             Limb(Word::MIN.wrapping_sub(modulus_lo.inv_mod2k(Word::BITS as usize).limbs[0].0));
 
-        // r must have an inverse mod modulus since the modulus does not divide 2^k.
-        let r_inv = r.inv_odd_mod(modulus).0;
-
         let r3 = montgomery_reduction(&r2.square_wide(), modulus, mod_neg_inv);
 
         Self {
@@ -58,7 +53,6 @@ impl<const LIMBS: usize> DynResidueParams<LIMBS> {
             r,
             r2,
             r3,
-            r_inv,
             mod_neg_inv,
         }
     }
@@ -85,7 +79,6 @@ impl<const LIMBS: usize> DynResidue<LIMBS> {
                 &residue_params.r2,
                 &residue_params.modulus,
                 residue_params.mod_neg_inv,
-                &residue_params.r,
             ),
             residue_params,
         }
@@ -97,7 +90,6 @@ impl<const LIMBS: usize> DynResidue<LIMBS> {
             &self.montgomery_form,
             &self.residue_params.modulus,
             self.residue_params.mod_neg_inv,
-            &self.residue_params.r_inv,
         )
     }
 
@@ -112,7 +104,7 @@ impl<const LIMBS: usize> DynResidue<LIMBS> {
     /// Instantiates a new `Residue` that represents 1.
     pub const fn one(residue_params: DynResidueParams<LIMBS>) -> Self {
         #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-        if LIMBS == bigint::WIDTH_WORDS {
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
             return Self {
                 montgomery_form: Uint::<LIMBS>::ONE,
                 residue_params,

@@ -17,7 +17,6 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
             &MOD::MODULUS,
             &MOD::R3,
             MOD::MOD_NEG_INV,
-            &MOD::R_INV,
         );
 
         let value = Self {

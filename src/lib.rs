@@ -5,10 +5,7 @@
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"
 )]
-#![cfg_attr(
-    not(all(target_os = "zkvm", target_arch = "riscv32")),
-    deny(unsafe_code)
-)]
+#![deny(unsafe_code)]
 #![warn(
     clippy::mod_module_files,
     clippy::unwrap_used,
@@ -169,6 +166,9 @@ mod non_zero;
 mod traits;
 mod uint;
 mod wrapping;
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+mod risc0;
 
 pub use crate::{
     checked::Checked,
