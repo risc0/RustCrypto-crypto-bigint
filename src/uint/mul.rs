@@ -4,6 +4,9 @@ use crate::{Checked, CheckedMul, Concat, Limb, Uint, WideWord, Word, Wrapping, Z
 use core::ops::{Mul, MulAssign};
 use subtle::CtOption;
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use crate::risc0;
+
 impl<const LIMBS: usize> Uint<LIMBS> {
     /// Compute "wide" multiplication, with a product twice the size of the input.
     ///
@@ -17,8 +20,12 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     ///
     /// For more info see: <https://github.com/RustCrypto/crypto-bigint/issues/4>
     // TODO(tarcieri): use `concat` to construct a wide output
-    // TODO(victor): Use sys_bigint to implement mul_wide for U128
-    pub const fn mul_wide(&self, rhs: &Self) -> (Self, Self) {
+    pub fn mul_wide(&self, rhs: &Self) -> (Self, Self) {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS / 2 {
+            return risc0::mul_wide_u128(&self, rhs);
+        }
+
         let mut i = 0;
         let mut lo = Self::ZERO;
         let mut hi = Self::ZERO;
@@ -53,7 +60,7 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     }
 
     /// Perform saturating multiplication, returning `MAX` on overflow.
-    pub const fn saturating_mul(&self, rhs: &Self) -> Self {
+    pub fn saturating_mul(&self, rhs: &Self) -> Self {
         let (res, overflow) = self.mul_wide(rhs);
 
         let mut i = 0;
@@ -72,7 +79,7 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     }
 
     /// Perform wrapping multiplication, discarding overflow.
-    pub const fn wrapping_mul(&self, rhs: &Self) -> Self {
+    pub fn wrapping_mul(&self, rhs: &Self) -> Self {
         self.mul_wide(rhs).0
     }
 
@@ -86,8 +93,16 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     }
 
     /// Square self, returning a "wide" result in two parts as (lo, hi).
-    // TODO(victor): Use sys_bigint to implement square_wide for U128
-    pub const fn square_wide(&self) -> (Self, Self) {
+    pub fn square_wide(&self) -> (Self, Self) {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS / 2 {
+            return risc0::mul_wide_u128(&self, &self);
+        }
+        self.const_square_wide()
+    }
+
+    /// Square self, returning a "wide" result in two parts as (lo, hi).
+    pub const fn const_square_wide(&self) -> (Self, Self) {
         // Translated from https://github.com/ucbrise/jedi-pairing/blob/c4bf151/include/core/bigint.hpp#L410
         //
         // Permission to relicense the resulting translation as Apache 2.0 + MIT was given

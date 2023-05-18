@@ -42,3 +42,36 @@ pub(crate) fn modmul_u256<const LIMBS: usize>(
     assert!(bool::from(result.ct_lt(&modulus)));
     result
 }
+
+#[inline(always)]
+pub(crate) fn mul_wide_u128<const LIMBS: usize>(
+    a: &Uint<LIMBS>,
+    b: &Uint<LIMBS>,
+) -> (Uint<LIMBS>, Uint<LIMBS>) {
+    // Assert at compile time that we are working with 4x32 Uints.
+    assert!(LIMBS == BIGINT_WIDTH_WORDS / 2);
+
+    let mut a_pad = [0u32; BIGINT_WIDTH_WORDS];
+    a_pad[..LIMBS].copy_from_slice(a.as_words());
+    let mut b_pad = [0u32; BIGINT_WIDTH_WORDS];
+    b_pad[..LIMBS].copy_from_slice(b.as_words());
+
+    let result = unsafe {
+        let mut out = core::mem::MaybeUninit::<[u32; BIGINT_WIDTH_WORDS]>::uninit();
+        // sys_bigint with modulus set to use is a wide u128 multiplication.
+        sys_bigint(
+            out.as_mut_ptr(),
+            OP_MULTIPLY,
+            a_pad.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
+            b_pad.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
+            &[0u32; BIGINT_WIDTH_WORDS],
+        );
+        out.assume_init()
+    };
+    let (lo, hi) = result.split_at(LIMBS);
+
+    (
+        Uint::<{ LIMBS }>::from_words(lo.try_into().unwrap()),
+        Uint::<{ LIMBS }>::from_words(hi.try_into().unwrap()),
+    )
+}

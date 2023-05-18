@@ -21,7 +21,7 @@ macro_rules! impl_modulus {
                 .0
                 .wrapping_add(&$crate::Uint::ONE);
             const R2: $crate::Uint<{ $crate::nlimbs!(<$uint_type>::BITS) }> =
-                $crate::Uint::const_rem_wide(Self::R.square_wide(), &Self::MODULUS).0;
+                $crate::Uint::const_rem_wide(Self::R.const_square_wide(), &Self::MODULUS).0;
             const MOD_NEG_INV: $crate::Limb = $crate::Limb(
                 $crate::Word::MIN.wrapping_sub(
                     Self::MODULUS
@@ -32,7 +32,7 @@ macro_rules! impl_modulus {
             );
             const R3: $crate::Uint<{ $crate::nlimbs!(<$uint_type>::BITS) }> =
                 $crate::modular::montgomery_reduction(
-                    &Self::R2.square_wide(),
+                    &Self::R2.const_square_wide(),
                     &Self::MODULUS,
                     Self::MOD_NEG_INV,
                 );
