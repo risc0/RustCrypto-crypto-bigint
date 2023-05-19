@@ -1,3 +1,4 @@
+#![cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 //! Equivalence tests between `num-bigint` and `crypto-bigint`
 
 use crypto_bigint::{

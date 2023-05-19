@@ -31,6 +31,7 @@ impl Encoding for Limb {
 }
 
 #[cfg(test)]
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 mod test {
     use super::*;
     use proptest::prelude::*;
