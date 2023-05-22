@@ -39,6 +39,10 @@ pub(crate) fn modmul_u256<const LIMBS: usize>(
     });
     // Assert that the Prover returned the canonical representation of the result, i.e. that it
     // is fully reduced and has no multiples of the modulus included.
+    // NOTE: On a cooperating prover, this check will always evaluate to false, and therefore
+    // will have timing invariant with any secrets. If the prover is faulty, this check may
+    // leak secret information through timing, however this is out of scope since a faulty
+    // cannot be relied upon for the privacy of the inputs.
     assert!(bool::from(result.ct_lt(&modulus)));
     result
 }
