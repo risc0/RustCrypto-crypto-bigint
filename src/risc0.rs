@@ -37,7 +37,7 @@ pub(crate) fn modmul_u256<const LIMBS: usize>(
         );
         out.assume_init()
     });
-    // Assert that the Prover returned the canonical representation of the result, i.e. that itj
+    // Assert that the Prover returned the canonical representation of the result, i.e. that it
     // is fully reduced and has no multiples of the modulus included.
     assert!(bool::from(result.ct_lt(&modulus)));
     result
