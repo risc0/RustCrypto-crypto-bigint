@@ -167,8 +167,13 @@ mod traits;
 mod uint;
 mod wrapping;
 
+/// RISC Zero accelerator support for use in zkVM guest.
+///
+/// Provides a direct interface for calling big integer arithmetic accelerator with U256 and U128
+/// types. You may prefer to use the Residue types in crypto_bigint::modular, which have
+/// automatic accelerator support when used with a 256-bit modulus.
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-mod risc0;
+pub mod risc0;
 
 pub use crate::{
     checked::Checked,

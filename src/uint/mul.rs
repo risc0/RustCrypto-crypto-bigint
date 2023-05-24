@@ -23,7 +23,7 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     pub fn mul_wide(&self, rhs: &Self) -> (Self, Self) {
         #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
         if LIMBS == risc0::BIGINT_WIDTH_WORDS / 2 {
-            return risc0::mul_wide_u128(&self, rhs);
+            return risc0::mul_wide_uint_128(&self, rhs);
         }
 
         let mut i = 0;
@@ -96,7 +96,7 @@ impl<const LIMBS: usize> Uint<LIMBS> {
     pub fn square_wide(&self) -> (Self, Self) {
         #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
         if LIMBS == risc0::BIGINT_WIDTH_WORDS / 2 {
-            return risc0::mul_wide_u128(&self, &self);
+            return risc0::mul_wide_uint_128(&self, &self);
         }
         self.const_square_wide()
     }

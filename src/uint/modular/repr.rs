@@ -14,7 +14,7 @@ pub(crate) fn into_montgomery_form<const LIMBS: usize>(
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     if LIMBS == risc0::BIGINT_WIDTH_WORDS {
         // Ensure that the input is reduced by passing it though a modmul by one.
-        return risc0::modmul_u256(a, &Uint::<LIMBS>::ONE, modulus);
+        return risc0::modmul_uint_256(a, &Uint::<LIMBS>::ONE, modulus);
     }
 
     let product = a.mul_wide(r2);
