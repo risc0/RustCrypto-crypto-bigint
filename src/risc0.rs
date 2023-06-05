@@ -1,6 +1,6 @@
 #![allow(unsafe_code)]
 
-use crate::{Uint, U256};
+use crate::{Uint, U128, U256};
 use subtle::ConstantTimeLess;
 
 /// RISC Zero supports BigInt operations with a width of 256-bits as 8x32-bit words.
@@ -53,26 +53,15 @@ pub(crate) fn modmul_uint_256<const LIMBS: usize>(
     result
 }
 
-// TODO(victor): Benchmark this function to see if it's actually worth keeping.
 /// Wide multiplication of two 128-bit Uint values using the RISC Zero accelerator.
-///
-/// NOTE: This method takes generic Uint values, but asserts that the input is 128 bits. It is
-/// provided because the main places we want to patch in multiplication use the generic Uint type,
-/// and specialization is not a stable Rust feature. When inlined, the assert should be removed.
 #[inline(always)]
-pub(crate) fn mul_wide_uint_128<const LIMBS: usize>(
-    a: &Uint<LIMBS>,
-    b: &Uint<LIMBS>,
-) -> (Uint<LIMBS>, Uint<LIMBS>) {
-    // Assert that we are working with 4x32 Uints.
-    assert!(LIMBS == BIGINT_WIDTH_WORDS / 2);
-
+pub fn mul_wide_u128<const LIMBS: usize>(a: &U128, b: &U128) -> U256 {
     let mut a_pad = [0u32; BIGINT_WIDTH_WORDS];
-    a_pad[..LIMBS].copy_from_slice(a.as_words());
+    a_pad[..U128::LIMBS].copy_from_slice(a.as_words());
     let mut b_pad = [0u32; BIGINT_WIDTH_WORDS];
-    b_pad[..LIMBS].copy_from_slice(b.as_words());
+    b_pad[..U128::LIMBS].copy_from_slice(b.as_words());
 
-    let result = unsafe {
+    U256::from_words(unsafe {
         let mut out = core::mem::MaybeUninit::<[u32; BIGINT_WIDTH_WORDS]>::uninit();
         // sys_bigint with modulus set to use is a wide u128 multiplication.
         sys_bigint(
@@ -83,13 +72,7 @@ pub(crate) fn mul_wide_uint_128<const LIMBS: usize>(
             &[0u32; BIGINT_WIDTH_WORDS],
         );
         out.assume_init()
-    };
-    let (lo, hi) = result.split_at(LIMBS);
-
-    (
-        Uint::<{ LIMBS }>::from_words(lo.try_into().unwrap()),
-        Uint::<{ LIMBS }>::from_words(hi.try_into().unwrap()),
-    )
+    })
 }
 
 /// Modular multiplication of two 256-bit Uint values using the RISC Zero accelerator.
