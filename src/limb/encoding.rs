@@ -31,10 +31,17 @@ impl Encoding for Limb {
 }
 
 #[cfg(test)]
-#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 mod test {
     use super::*;
     use proptest::prelude::*;
+
+    fn config() -> ProptestConfig {
+        if cfg!(all(target_os = "zkvm", target_arch = "riscv32")) {
+            ProptestConfig::with_cases(1)
+        } else {
+            ProptestConfig::default()
+        }
+    }
 
     prop_compose! {
         fn limb()(inner in any::<Word>()) -> Limb {
@@ -43,6 +50,8 @@ mod test {
     }
 
     proptest! {
+        #![proptest_config(config())]
+
         #[test]
         fn roundtrip(a in limb()) {
             assert_eq!(a, Limb::from_be_bytes(a.to_be_bytes()));
@@ -51,6 +60,8 @@ mod test {
     }
 
     proptest! {
+        #![proptest_config(config())]
+
         #[test]
         fn reverse(a in limb()) {
             let mut bytes = a.to_be_bytes();

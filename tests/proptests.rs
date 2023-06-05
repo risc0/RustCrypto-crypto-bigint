@@ -1,4 +1,3 @@
-#![cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 //! Equivalence tests between `num-bigint` and `crypto-bigint`
 
 use crypto_bigint::{
@@ -44,7 +43,17 @@ prop_compose! {
     }
 }
 
+fn config() -> ProptestConfig {
+    if cfg!(all(target_os = "zkvm", target_arch = "riscv32")) {
+        ProptestConfig::with_cases(1)
+    } else {
+        ProptestConfig::default()
+    }
+}
+
 proptest! {
+    #![proptest_config(config())]
+
     #[test]
     fn roundtrip(a in uint()) {
         assert_eq!(a, to_uint(to_biguint(&a)));
