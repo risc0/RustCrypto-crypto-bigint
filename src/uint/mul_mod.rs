@@ -2,6 +2,9 @@
 
 use crate::{Limb, Uint, WideWord, Word};
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use crate::risc0;
+
 impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes `self * rhs mod p` in constant time for the special modulus
     /// `p = MAX+1-c` where `c` is small enough to fit in a single [`Limb`].
@@ -15,6 +18,15 @@ impl<const LIMBS: usize> Uint<LIMBS> {
             let prod = self.limbs[0].0 as WideWord * rhs.limbs[0].0 as WideWord;
             let reduced = prod % Word::MIN.wrapping_sub(c.0) as WideWord;
             return Self::from_word(reduced as Word);
+        }
+
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            return risc0::modmul_uint_256(
+                &self,
+                rhs,
+                &Uint::<LIMBS>::ZERO.wrapping_sub(&c.into()),
+            );
         }
 
         let (lo, hi) = self.mul_wide(rhs);
