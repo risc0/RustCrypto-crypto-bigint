@@ -55,7 +55,7 @@ pub(crate) fn modmul_uint_256<const LIMBS: usize>(
 
 /// Wide multiplication of two 128-bit Uint values using the RISC Zero accelerator.
 #[inline(always)]
-pub fn mul_wide_u128<const LIMBS: usize>(a: &U128, b: &U128) -> U256 {
+pub fn mul_wide_u128(a: &U128, b: &U128) -> U256 {
     let mut a_pad = [0u32; BIGINT_WIDTH_WORDS];
     a_pad[..U128::LIMBS].copy_from_slice(a.as_words());
     let mut b_pad = [0u32; BIGINT_WIDTH_WORDS];
