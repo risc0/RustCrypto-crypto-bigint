@@ -223,13 +223,11 @@ where
             if Uint::ct_lt(&montgomery_form, &MOD::MODULUS).into() {
                 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
                 if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+                    const R_INV: Uint<LIMBS> = &MOD::R.inv_odd_mod(&MOD::MODULUS);
+
                     // In the RISC Zero zkVM 256-bit residues are represented in standard form.
                     // To ensure this is interoperable with the host, convert to standard form.
-                    let value = risc0::modmul_uint_256(
-                        &montgomery_form,
-                        &MOD::R.inv_odd_mod(&MOD::MODULUS),
-                        &MOD::MODULUS,
-                    );
+                    let value = risc0::modmul_uint_256(&montgomery_form, &R_INV, &MOD::MODULUS);
                     return Ok(Self {
                         value,
                         phantom: PhantomData,
