@@ -92,7 +92,13 @@ mod tests {
                         assert_eq!(*c, x, "{} * {} mod {} = {} != {}", a, b, p, x, c);
                     }
 
-                    for _i in 0..100 {
+                    let iterations = if cfg!(all(target_os = "zkvm", target_arch = "riscv32")) {
+                        1
+                    } else {
+                        100
+                    };
+
+                    for _i in 0..iterations {
                         let a = Uint::<$size>::random_mod(&mut rng, p);
                         let b = Uint::<$size>::random_mod(&mut rng, p);
 
