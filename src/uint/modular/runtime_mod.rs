@@ -73,21 +73,43 @@ pub struct DynResidue<const LIMBS: usize> {
 impl<const LIMBS: usize> DynResidue<LIMBS> {
     /// Instantiates a new `Residue` that represents this `integer` mod `MOD`.
     pub fn new(integer: &Uint<LIMBS>, residue_params: DynResidueParams<LIMBS>) -> Self {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            // When working with U256 in the RISC Zero zkVM, leave the value in standard form.
+            // Ensure that the input is reduced by passing it though a modmul by one.
+            return Self {
+                montgomery_form: risc0::modmul_uint_256(
+                    &integer,
+                    &Uint::<LIMBS>::ONE,
+                    &residue_params.modulus,
+                ),
+                residue_params,
+            };
+        }
+
+        let product = integer.mul_wide(&residue_params.r2);
+        let montgomery_form = montgomery_reduction(
+            &product,
+            &residue_params.modulus,
+            residue_params.mod_neg_inv,
+        );
+
         Self {
-            montgomery_form: super::repr::into_montgomery_form(
-                integer,
-                &residue_params.r2,
-                &residue_params.modulus,
-                residue_params.mod_neg_inv,
-            ),
+            montgomery_form,
             residue_params,
         }
     }
 
     /// Retrieves the integer currently encoded in this `Residue`, guaranteed to be reduced.
     pub fn retrieve(&self) -> Uint<LIMBS> {
-        super::repr::from_montgomery_form(
-            &self.montgomery_form,
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            // In the RISC Zero zkVM 256-bit residues are represented in standard form.
+            return self.montgomery_form;
+        }
+
+        montgomery_reduction(
+            &(self.montgomery_form, Uint::ZERO),
             &self.residue_params.modulus,
             self.residue_params.mod_neg_inv,
         )

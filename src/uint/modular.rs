@@ -10,7 +10,6 @@ mod div_by_2;
 mod inv;
 mod mul;
 mod pow;
-mod repr;
 mod sub;
 
 pub use reduction::montgomery_reduction;

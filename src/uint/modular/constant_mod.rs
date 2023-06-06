@@ -4,7 +4,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{Limb, Uint, Zero};
 
-use super::{div_by_2::div_by_2, Retrieve};
+use super::{div_by_2::div_by_2, reduction::montgomery_reduction, Retrieve};
 
 #[cfg(feature = "rand_core")]
 use crate::{rand_core::CryptoRngCore, NonZero, Random, RandomMod};
@@ -108,21 +108,40 @@ impl<MOD: ResidueParams<LIMBS>, const LIMBS: usize> Residue<MOD, LIMBS> {
 
     /// Instantiates a new `Residue` that represents this `integer` mod `MOD`.
     pub fn new(integer: &Uint<LIMBS>) -> Self {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            // When working with U256 in the RISC Zero zkVM, leave the value in standard form.
+            // Ensure that the input is reduced by passing it though a modmul by one.
+            return Self {
+                montgomery_form: risc0::modmul_uint_256(
+                    &integer,
+                    &Uint::<LIMBS>::ONE,
+                    &MOD::MODULUS,
+                ),
+                phantom: PhantomData,
+            };
+        }
+
+        let product = integer.mul_wide(&MOD::R2);
+        let montgomery_form =
+            montgomery_reduction::<LIMBS>(&product, &MOD::MODULUS, MOD::MOD_NEG_INV);
+
         Self {
-            montgomery_form: super::repr::into_montgomery_form(
-                integer,
-                &MOD::R2,
-                &MOD::MODULUS,
-                MOD::MOD_NEG_INV,
-            ),
+            montgomery_form,
             phantom: PhantomData,
         }
     }
 
     /// Retrieves the integer currently encoded in this `Residue`, guaranteed to be reduced.
     pub fn retrieve(&self) -> Uint<LIMBS> {
-        super::repr::from_montgomery_form::<LIMBS>(
-            &self.montgomery_form,
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            // In the RISC Zero zkVM 256-bit residues are represented in standard form.
+            return self.montgomery_form;
+        }
+
+        montgomery_reduction::<LIMBS>(
+            &(self.montgomery_form, Uint::ZERO),
             &MOD::MODULUS,
             MOD::MOD_NEG_INV,
         )
@@ -202,6 +221,21 @@ where
     {
         Uint::<LIMBS>::deserialize(deserializer).and_then(|montgomery_form| {
             if Uint::ct_lt(&montgomery_form, &MOD::MODULUS).into() {
+                #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+                if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+                    // In the RISC Zero zkVM 256-bit residues are represented in standard form.
+                    // To ensure this is interoperable with the host, convert to standard form.
+                    let value = risc0::modmul_uint_256(
+                        &montgomery_form,
+                        &MOD::R.inv_odd_mod(&MOD::MODULUS),
+                        &MOD::MODULUS,
+                    );
+                    return Ok(Self {
+                        value,
+                        phantom: PhantomData,
+                    });
+                }
+
                 Ok(Self {
                     montgomery_form,
                     phantom: PhantomData,
@@ -223,6 +257,14 @@ where
     where
         S: Serializer,
     {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        if LIMBS == risc0::BIGINT_WIDTH_WORDS {
+            // In the RISC Zero zkVM 256-bit residues are represented in standard form.
+            // To ensure this is interoperable with the host, convert to Montgomery form.
+            let value = risc0::modmul_uint_256(&self.montgomery_form, &MOD::R, &MOD::MODULUS);
+            return value.serialize(serializer);
+        }
+
         self.montgomery_form.serialize(serializer)
     }
 }
