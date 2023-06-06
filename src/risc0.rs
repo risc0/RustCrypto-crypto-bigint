@@ -33,7 +33,7 @@ pub(crate) fn modmul_uint_256<const LIMBS: usize>(
     assert!(LIMBS == BIGINT_WIDTH_WORDS);
 
     let result = Uint::<LIMBS>::from_words(unsafe {
-        let mut out = [0u32; LIMBS];
+        let mut out = core::mem::MaybeUninit::<[u32; LIMBS]>::uninit();
         sys_bigint(
             out.as_mut_ptr() as *mut [u32; BIGINT_WIDTH_WORDS],
             OP_MULTIPLY,
@@ -41,7 +41,7 @@ pub(crate) fn modmul_uint_256<const LIMBS: usize>(
             b.as_words().as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
             modulus.as_words().as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
         );
-        out
+        out.assume_init()
     });
     // Assert that the Prover returned the canonical representation of the result, i.e. that it
     // is fully reduced and has no multiples of the modulus included.
@@ -55,23 +55,23 @@ pub(crate) fn modmul_uint_256<const LIMBS: usize>(
 
 /// Wide multiplication of two 128-bit Uint values using the RISC Zero accelerator.
 #[inline(always)]
-pub fn mul_wide_u128(a: &U128, b: &U128) -> U256 {
+pub fn mul_wide_u128<const LIMBS: usize>(a: &U128, b: &U128) -> U256 {
     let mut a_pad = [0u32; BIGINT_WIDTH_WORDS];
     a_pad[..U128::LIMBS].copy_from_slice(a.as_words());
     let mut b_pad = [0u32; BIGINT_WIDTH_WORDS];
     b_pad[..U128::LIMBS].copy_from_slice(b.as_words());
 
     U256::from_words(unsafe {
-        let mut out = [0u32; BIGINT_WIDTH_WORDS];
+        let mut out = core::mem::MaybeUninit::<[u32; BIGINT_WIDTH_WORDS]>::uninit();
         // sys_bigint with modulus set to use is a wide u128 multiplication.
         sys_bigint(
-            &mut out,
+            out.as_mut_ptr(),
             OP_MULTIPLY,
-            &a_pad,
-            &b_pad,
+            a_pad.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
+            b_pad.as_ptr() as *const [u32; BIGINT_WIDTH_WORDS],
             &[0u32; BIGINT_WIDTH_WORDS],
         );
-        out
+        out.assume_init()
     })
 }
 
@@ -82,15 +82,15 @@ pub fn mul_wide_u128(a: &U128, b: &U128) -> U256 {
 #[inline(always)]
 pub fn modmul_u256_denormalized(a: &U256, b: &U256, modulus: &U256) -> U256 {
     U256::from_words(unsafe {
-        let mut out = [0u32; BIGINT_WIDTH_WORDS];
+        let mut out = core::mem::MaybeUninit::<[u32; BIGINT_WIDTH_WORDS]>::uninit();
         sys_bigint(
-            &mut out,
+            out.as_mut_ptr(),
             OP_MULTIPLY,
             a.as_words(),
             b.as_words(),
             modulus.as_words(),
         );
-        out
+        out.assume_init()
     })
 }
 
