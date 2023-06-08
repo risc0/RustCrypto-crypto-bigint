@@ -28,8 +28,7 @@ serdect = { version = "0.2", optional = true, default-features = false }
 zeroize = { version = "1", optional = true,  default-features = false }
 
 [target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dependencies]
-getrandom = { version = "0.2.9", features = ["custom"] }
-radium = { git = "https://github.com/ferrilab/radium", rev = "723bed5abd75994ee4b7221b8b12c9f4e77ce408" }
+getrandom = { version = "0.2", features = ["custom"] }
 
 [dev-dependencies]
 bincode = "1"
