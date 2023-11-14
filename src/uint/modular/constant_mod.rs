@@ -219,17 +219,18 @@ where
     where
         D: Deserializer<'de>,
     {
+        #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        let r_inv: Uint<{ LIMBS }> = MOD::R.inv_odd_mod(&MOD::MODULUS).0;
+
         Uint::<LIMBS>::deserialize(deserializer).and_then(|montgomery_form| {
             if Uint::ct_lt(&montgomery_form, &MOD::MODULUS).into() {
                 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
                 if LIMBS == risc0::BIGINT_WIDTH_WORDS {
-                    const R_INV: Uint<LIMBS> = &MOD::R.inv_odd_mod(&MOD::MODULUS);
-
                     // In the RISC Zero zkVM 256-bit residues are represented in standard form.
                     // To ensure this is interoperable with the host, convert to standard form.
-                    let value = risc0::modmul_uint_256(&montgomery_form, &R_INV, &MOD::MODULUS);
+                    let value = risc0::modmul_uint_256(&montgomery_form, &r_inv, &MOD::MODULUS);
                     return Ok(Self {
-                        value,
+                        montgomery_form: value,
                         phantom: PhantomData,
                     });
                 }
@@ -264,5 +265,27 @@ where
         }
 
         self.montgomery_form.serialize(serializer)
+    }
+}
+
+#[cfg(all(test, feature = "serde"))]
+mod tests {
+    use crate::{const_residue, impl_modulus, modular::constant_mod::ResidueParams, U256};
+
+    impl_modulus!(
+        Modulus,
+        U256,
+        "9CC24C5DF431A864188AB905AC751B727C9447A8E99E6366E1AD78A21E8D882B"
+    );
+
+    #[test]
+    fn serde_roundtrip() {
+        let value_uint = U256::from(105u64);
+        let value = const_residue!(value_uint, Modulus);
+
+        let value_encoded = bincode::serialize(&value).unwrap();
+        let value_decoded = bincode::deserialize(&value_encoded).unwrap();
+
+        assert_eq!(value, value_decoded);
     }
 }
