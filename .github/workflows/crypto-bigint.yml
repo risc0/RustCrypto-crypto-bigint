@@ -1,5 +1,9 @@
 name: crypto-bigint
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     paths-ignore:
@@ -27,7 +31,7 @@ jobs:
           - wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
@@ -61,7 +65,7 @@ jobs:
             rust: stable
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
@@ -87,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: ${{ matrix.deps }}
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
@@ -101,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: stable
       - run: cargo run --release
@@ -113,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: 1.65.0
           components: clippy
@@ -123,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: stable
           components: rustfmt
@@ -133,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: 1.65.0
       - run: cargo build --all-features --benches
@@ -142,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: risc0/risc0/.github/actions/rustup@v0.19.1
         with:
           toolchain: stable
       - run: cargo doc --all-features
