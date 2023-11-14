@@ -17,7 +17,7 @@ pub fn inv_montgomery_form<const LIMBS: usize>(
     }
 
     (
-        mul_montgomery_form(&inverse, &r3, modulus, mod_neg_inv),
+        mul_montgomery_form(&inverse, r3, modulus, mod_neg_inv),
         is_some,
     )
 }
